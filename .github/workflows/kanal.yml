@@ -1,0 +1,43 @@
+name: kanal
+# Публикация постов из kanal/ochered и сторож графика ДТЕК — без компьютера Ферума.
+on:
+  schedule:
+    - cron: "2,17,32,47 * * * *"
+  push:
+    paths: ["kanal/ochered/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: kanal
+  cancel-in-progress: false
+jobs:
+  kanal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: Europe/Kyiv
+      VECHIRNIJ_PAPKA: ${{ github.workspace }}/kanal
+      VECHIRNIJ_MEDIA: ${{ github.workspace }}
+      VECHIRNIJ_OFORMLENIE: ${{ github.workspace }}/kanal/oformlenie
+      VECHIRNIJ_KARTINKY: ${{ github.workspace }}/kanal/kartinky
+      VECHIRNIJ_BEZ_PUBLIKACII: "1"
+      VIBER_CHANNEL_TOKEN: ${{ secrets.VIBER_CHANNEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install --quiet pillow
+      - run: |
+          git config user.name "vechirnij-kanal"
+          git config user.email "ferum3000@users.noreply.github.com"
+      - name: Сторож ДТЕК
+        run: python3 scripts/dtek_watch.py
+        continue-on-error: true
+      - name: Публикация очереди
+        run: python3 scripts/post_queue.py
+      - name: Сохранить очередь и журнал
+        if: always()
+        run: |
+          git add -A kanal
+          git commit -q -m "kanal: $(date '+%d.%m %H:%M')" || exit 0
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          exit 1
