@@ -29,6 +29,9 @@ jobs:
       - run: |
           git config user.name "vechirnij-kanal"
           git config user.email "ferum3000@users.noreply.github.com"
+      - name: Проверка токена
+        run: |
+          python3 -c "import json,os,urllib.request as u; r=u.Request('https://chatapi.viber.com/pa/get_account_info',data=json.dumps({'auth_token':os.environ['VIBER_CHANNEL_TOKEN']}).encode(),headers={'Content-Type':'application/json'}); d=json.load(u.urlopen(r,timeout=30)); print('Viber:', d.get('status'), d.get('status_message')); exit(d.get('status'))"
       - name: Сторож ДТЕК
         run: python3 scripts/dtek_watch.py
         continue-on-error: true

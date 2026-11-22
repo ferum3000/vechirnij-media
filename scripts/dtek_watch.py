@@ -132,7 +132,8 @@ def kartka(data, sost, vykl, bulo, chas):
 
 
 def main():
-    sys.stdout.reconfigure(encoding="utf-8")
+    if sys.stdout:
+        sys.stdout.reconfigure(encoding="utf-8")
     data, sost, onovleno = grafik()
     vykl = intervaly(sost)
     state = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
