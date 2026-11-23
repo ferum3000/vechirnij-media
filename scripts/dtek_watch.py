@@ -1,7 +1,7 @@
 """Сторож графика ДТЕК для черги 2.2 (Авраменка 14 и бул. Вечірній).
 
-Раз в 15 минут (Планировщик Windows) берёт страницу https://www.dtek-dnem.com.ua/ua/shutdowns,
-достаёт из неё DisconSchedule.fact (фактический график на сегодня) и сравнивает с тем,
+С 23.11.2026 график берётся из Telegram-канала Контакт-центру керуючих компаній (@keruiuchi_kompanii, t.me/s/…):
+сайт ДТЕК закрыт проверкой на робота, её не обходим. Скрипт берёт последний пост с графиком группы 2.2 на сегодня и сравнивает с тем,
 что канал уже сообщил людям (dtek_state.json).
 
 Если график на сегодня изменился и сейчас 07:00–21:59 — рисует карточку «Графік змінено»,
@@ -22,6 +22,8 @@ import urllib.request
 from pathlib import Path
 
 import os
+from zoneinfo import ZoneInfo
+KYIV = ZoneInfo("Europe/Kyiv")
 # Как post_queue.py: в облаке VECHIRNIJ_PAPKA = kanal/ репозитория, шаблон карточки лежит там же.
 PAPKA = Path(os.environ.get("VECHIRNIJ_PAPKA") or Path(__file__).resolve().parent).resolve()
 SKRIPTY = Path(__file__).resolve().parent
@@ -59,22 +61,73 @@ def json_posle(html, metka):
     raise ValueError(f"не нашёл конец {metka}")
 
 
+KANAL_TG = "keruiuchi_kompanii"  # Контакт-центр керуючих компаній (Житлосервіс-КР, Сітісервіс-КР, Уют-2011), офіційний
+GRUPA = "2.2"
+
+
+def v_hvylyny(hhmm):
+    h, m = hhmm.split(":")
+    return int(h) * 60 + int(m)
+
+
+def razobrat_post(tekst, chas_posta, segodnya):
+    """Пост Контакт-центру → список интервалов (минуты) для группы 2.2 на сегодня, или None, если пост не про это.
+
+    Понимает три вида постов:
+      «Орієнтовний графік відключень … на 23 листопада  Група 1.1 * 00:00–01:00 … Група 2.2 * … Група 3.2 …»
+      «Графік відключення електроенергії на сьогодні ▪️ Група 1.1 — 21:00–00:00; ▪️ Група 2.2 — 21:00–00:00; …»
+      «ЗМІНИ В ГРАФІКУ … Черги 1.1, 2.2, 3.2 … — наразі, без відключень»
+    Посты о текущем отключении («Відключення … З 07:30 до 11:30 … Черга 2.2 Частково…») — не график дня, пропускаем.
+    """
+    import re
+    t = " ".join(tekst.split())
+    nyzh = t.lower()
+    if GRUPA not in t or "графік" not in nyzh:
+        return None
+    pro_segodni = f"{segodnya.day} {MISYATSI[segodnya.month - 1]}" in nyzh or (
+        "на сьогодні" in nyzh and chas_posta.date() == segodnya) or (
+        "змін" in nyzh and chas_posta.date() == segodnya)
+    if not pro_segodni:
+        return None
+    if "без відключень" in nyzh and re.search(r"черг[аи].{0,80}?2\.2.{0,80}?без відключень", nyzh):
+        return []
+    m = re.search(r"груп[аи]\s*2\.2(.*?)(?=груп[аи]\s*\d\.\d|інформація може|$)", t, re.I)
+    if not m:
+        return None
+    kuski = re.findall(r"(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})", m.group(1))
+    if not kuski:
+        return None
+    rez = []
+    for a, b in kuski:
+        a, b = v_hvylyny(a), v_hvylyny(b)
+        if b <= a:
+            b = 24 * 60  # 21:00–00:00 → до кінця доби
+        rez.append((a, b))
+    return sorted(rez)
+
+
 def grafik():
-    """→ (дата ГГГГ-ММ-ДД, список 24 состояний, время обновления ДТЕК)."""
-    req = urllib.request.Request(URL, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                                               "AppleWebKit/537.36 Chrome/131 Safari/537.36"})
-    html = urllib.request.urlopen(req, timeout=40).read().decode("utf-8")
-    fact = json_posle(html, "DisconSchedule.fact")
-    segodnya = str(fact["today"])
-    den = fact["data"][segodnya][CHERGA]
+    """→ (дата ГГГГ-ММ-ДД, список 24 состояний, время поста Контакт-центру).
+
+    С 23.11.2026 сайт ДТЕК закрыт проверкой на робота; её не обходим. График берём из официального
+    Telegram-канала Контакт-центру керуючих компаній (он публикует график ДТЕК текстом по группам),
+    страница t.me/s/keruiuchi_kompanii — обычный запрос, без входа. Берём последний пост с графиком на сегодня."""
+    sys.path.insert(0, str(SKRIPTY))
+    from tg_chytach import posty
+    segodnya = dt.datetime.now(KYIV).date()
+    ostanniy = None
+    for p in posty(KANAL_TG):
+        kuski = razobrat_post(p["tekst"], p["chas"], segodnya)
+        if kuski is not None and (ostanniy is None or p["chas"] > ostanniy[0]):
+            ostanniy = (p["chas"], kuski, p["url"])
+    if ostanniy is None:
+        raise LookupError(f"в @{KANAL_TG} нет поста с графиком группы {GRUPA} на {segodnya:%d.%m}")
+    chas, kuski, url = ostanniy
     sost = []
-    for h in range(1, 25):
-        kod = den[str(h)]
-        if kod not in KODY:
-            raise ValueError(f"незнакомый код {kod!r} в {h - 1:02d}:00 — смотреть сайт вручную")
-        sost.append(KODY[kod])
-    data = dt.datetime.fromtimestamp(int(segodnya)).date().isoformat()
-    return data, sost, fact.get("update", "")
+    for h in range(24):
+        pol = [any(a <= h * 60 + k * 30 and h * 60 + k * 30 + 30 <= b for a, b in kuski) for k in (0, 1)]
+        sost.append({(True, True): "off", (True, False): "half1", (False, True): "half2", (False, False): "on"}[tuple(pol)])
+    return segodnya.isoformat(), sost, f"{chas:%d.%m.%Y %H:%M}"
 
 
 def intervaly(sost):
@@ -141,7 +194,7 @@ def main():
     if "--klasy" in sys.argv:  # для render-svitlo.py --klasy
         m = {"on": "cell-non-scheduled", "off": "cell-scheduled", "half1": "cell-first-half", "half2": "cell-second-half"}
         print(",".join(m[s] for s in sost))
-        print(f"черга 2.2, {data}, ДТЕК оновив {onovleno}: {opys(vykl)}", file=sys.stderr)
+        print(f"черга 2.2, {data}, пост Контакт-центру {onovleno}: {opys(vykl)}", file=sys.stderr)
         return
     if "--pokazat" in sys.argv:
         print(data, onovleno, opys(vykl), "| уже сообщили:", state)
@@ -164,10 +217,11 @@ def main():
     chas = (onovleno or f"{teper:%H:%M}").split(" ")[-1]
     out, den = kartka(data, sost, vykl, state["vykl"], f"{chas} {dt.date.fromisoformat(data):%d.%m.%Y}")
     bulo = ", ".join(state["vykl"]) if state["vykl"] else "відключень не було"
-    tekst = (f"⚠️ Графік змінено. ДТЕК оновив графік о {chas}.\n"
+    tekst = (f"⚠️ Графік змінено. Оновлений графік ДТЕК опублікували о {chas}.\n"
              f"💡 Світло сьогодні, {den[0].lower() + den[1:]}, черга 2.2: {opys(vykl)}.\n"
              f"Було: {bulo}.\n\n"
-             "Графік може змінитися ще — стежимо й напишемо. Свою чергу перевірте на сайті ДТЕК або в боті ДТЕК у Viber.")
+             "Графік може змінитися ще — стежимо й напишемо. Свою чергу перевірте на сайті ДТЕК або в боті ДТЕК у Viber.\n"
+             "Джерело: Контакт-центр керуючих компаній (Telegram).")
     fajl = OCHERED / f"{teper:%Y-%m-%d_%H%M}_zmina-grafika.md"
     fajl.write_text(f"---\nvremya: {teper:%Y-%m-%d %H:%M}\nstatus: odobreno\nkartinka: {out.as_posix()}\n---\n{tekst}\n",
                     encoding="utf-8")
