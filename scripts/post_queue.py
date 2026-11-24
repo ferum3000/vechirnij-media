@@ -68,6 +68,11 @@ def zapros(metod, dannye):
 
 
 def zapis_v_log(stroka):
+    # В облаке очередь проверяется каждые 5 минут: одинаковую строку за сегодня второй раз не пишем.
+    segodnya = f"{datetime.now():%Y-%m-%d}"
+    if LOG.exists() and any(s.startswith(segodnya) and s.rstrip().endswith(stroka)
+                            for s in LOG.read_text(encoding="utf-8").splitlines()[-300:]):
+        return
     with LOG.open("a", encoding="utf-8") as f:
         f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S}  {stroka}\n")
     print(stroka)
@@ -216,7 +221,7 @@ def main():
             continue
         if (seychas - vremya).total_seconds() > 2 * 3600:
             if "--force" not in sys.argv:
-                zapis_v_log(f"ПРОСРОЧЕН, НЕ ОПУБЛИКОВАН {fail.name}: время {vremya:%d.%m %H:%M}, сейчас {seychas:%d.%m %H:%M}. Поменять vremya или запустить с --force.")
+                zapis_v_log(f"ПРОСРОЧЕН, НЕ ОПУБЛИКОВАН {fail.name}: время {vremya:%d.%m %H:%M}, опоздание больше 2 часов. Поменять vremya или запустить с --force.")
                 continue
         gotovye.append((vremya, fail, telo, kartinka))
 

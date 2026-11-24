@@ -1,7 +1,6 @@
 name: pidpysnyky
+# С 24.11.2026 подписчиков раз в час замеряет смена kanal.yml; здесь только ручной запуск.
 on:
-  schedule:
-    - cron: "7 * * * *"
   workflow_dispatch:
 permissions:
   contents: write

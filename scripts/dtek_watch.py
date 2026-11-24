@@ -44,6 +44,11 @@ MISYATSI = ["січня", "лютого", "березня", "квітня", "т�
 
 
 def log(tekst):
+    # В облаке сторож ходит каждые 5 минут: одинаковую строку за сегодня второй раз не пишем.
+    segodnya = f"{dt.datetime.now():%Y-%m-%d}"
+    if LOG.exists() and any(s.startswith(segodnya) and s.rstrip().endswith(f"ДТЕК: {tekst}")
+                            for s in LOG.read_text(encoding="utf-8").splitlines()[-300:]):
+        return
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(f"{dt.datetime.now():%Y-%m-%d %H:%M:%S}  ДТЕК: {tekst}\n")
 
