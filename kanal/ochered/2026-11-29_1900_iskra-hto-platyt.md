@@ -1,6 +1,6 @@
 ---
 vremya: 2026-11-29 19:00
-status: odobreno
+status: vidkladeno
 kartinka: kartinky/iskra-2026-11-29.png
 ---
 🗣 Як по-вашому?
