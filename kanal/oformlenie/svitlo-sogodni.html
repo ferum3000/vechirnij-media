@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;background:#f4efe6}
+  body{font-family:"Segoe UI",Arial,sans-serif;color:#1b1b1b;padding:40px 60px 34px;display:flex;flex-direction:column}
+  .top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:4px solid #1b1b1b;padding-bottom:14px}
+  .top .kanal{font-size:25px;font-weight:600;color:#444}
+  .top .date{font-size:23px;color:#666}
+  .hello{position:relative;height:300px;margin:16px 0 14px;border-radius:24px;overflow:hidden;
+         background:#f6ecdc url("ranok/shapka.jpg") right 62%/80% auto no-repeat;padding:44px 36px}
+  .hello::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#f6ecdc 0%,#f6ecdc 24%,rgba(246,236,220,.8) 42%,rgba(248,238,222,0) 62%)}
+  .hello>*{position:relative}
+  h1{font-size:72px;line-height:1;font-weight:800;letter-spacing:-1px;color:#3b2414}
+  .den{font-size:30px;color:#6b4a2f;line-height:1.25;margin-top:14px;font-weight:600}
+  .smile{font-size:28px;color:#8a5a2b;margin-top:10px}
+  .hero{background:#1b1b1b;color:#f4efe6;border-radius:24px;padding:22px 30px;margin-bottom:14px}
+  .hero .cherga{font-size:28px;color:#f2b01e;font-weight:700;margin-bottom:4px}
+  .hero .status{font-size:46px;font-weight:800;line-height:1.12}
+  .hours{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:14px}
+  .h{font-size:19px;font-weight:700;text-align:center;border-radius:7px;padding:7px 0;background:#2e5a3a;color:#d9f2df}
+  .h.off{background:#f2b01e;color:#1b1b1b}
+  .h.half{background:linear-gradient(90deg,#f2b01e 50%,#2e5a3a 50%);color:#fff}
+  .h.half2{background:linear-gradient(90deg,#2e5a3a 50%,#f2b01e 50%);color:#fff}
+  .legend{font-size:19px;color:#b9b2a6;margin-top:8px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .block{background:#fff;border-radius:20px;padding:18px 24px;border-left:12px solid var(--c)}
+  .block h2{font-size:24px;font-weight:700;color:var(--c);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .big{font-size:50px;font-weight:800;line-height:1.05}
+  .txt{font-size:27px;line-height:1.3}
+  .surp{background:#fff;border-radius:20px;padding:18px 24px;border-left:12px solid #7b4bb7;margin-bottom:12px}
+  .surp h2{font-size:24px;font-weight:700;color:#7b4bb7;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .foot{margin-top:auto;font-size:22px;color:#444;border-top:3px solid #1b1b1b;padding-top:12px;line-height:1.35}
+</style></head>
+<body>
+  <div class="top"><div class="kanal">Вечірній бульвар | Новини району</div><div class="date">графік ДТЕК · Контакт-центр, {{CHAS}}</div></div>
+  <div class="hello"><h1>Доброго ранку!</h1><div class="den">{{DATA}}</div><div class="smile">Кава, тепла батарея — і вперед!</div></div>
+
+  <div class="hero">
+    <div class="cherga">💡 Світло сьогодні · черга 2.2</div>
+    <div class="status">{{STATUS}}</div>
+    <div class="hours">{{HOURS}}</div>
+    <div class="legend">Зелене — світло є · жовте — відключення · половина — пів години</div>
+  </div>
+
+  <div class="row">
+    <div class="block" style="--c:#2b6cb0"><h2>Погода</h2><div class="big">{{TEMP}}</div><div class="txt">{{POGODA}}</div></div>
+    <div class="block" style="--c:#b7791f"><h2>Світловий день</h2><div class="big">{{SUNSET}}</div><div class="txt">стемніє · схід о {{SUNRISE}}</div></div>
+  </div>
+
+  <div class="surp" style="border-left-color:#c0392b"><h2 style="color:#c0392b">Що за ніч</h2><div class="txt">{{NOVYNY}}</div></div>
+
+  {{SURPRIZ}}
+
+  <div class="foot">Графік може змінитися. Світла нема поза графіком? Через 15 хв — 0 800 301 497.</div>
+</body></html>

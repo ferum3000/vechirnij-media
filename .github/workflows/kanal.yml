@@ -49,6 +49,8 @@ jobs:
             h=$((10#$(date +%H)))
             # Ночью сторож ДТЕК молчит (публиковать всё равно нельзя), утром проверит сам.
             if [ $h -ge 7 ] && [ $h -lt 22 ]; then python3 scripts/dtek_watch.py || echo "сторож ДТЕК: ошибка (в post.log)"; fi
+            # Утренняя карточка 07:10–07:29, если Claude на компьютере её не приготовил (scripts/ranok.py).
+            python3 scripts/ranok.py || echo "утренняя карточка: ошибка (в post.log)"
             python3 scripts/post_queue.py || echo "очередь: ошибка (в post.log)"
             ch=$(date +%Y%m%d%H)
             if [ "$ch" != "$zamer" ]; then python3 scripts/viber_stats.py && zamer=$ch || echo "замер подписчиков: ошибка"; fi
