@@ -1,5 +1,5 @@
 ---
-vremya: 2026-11-24 19:00
+vremya: 2026-11-24 20:30
 status: odobreno
 kartinka: kartinky/iskra-2026-11-24.png
 ---
