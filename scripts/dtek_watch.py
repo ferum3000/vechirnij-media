@@ -97,6 +97,8 @@ def razobrat_post(tekst, chas_posta, segodnya):
     if "без відключень" in nyzh and re.search(r"черг[аи].{0,80}?2\.2.{0,80}?без відключень", nyzh):
         return []
     m = re.search(r"груп[аи]\s*2\.2(.*?)(?=груп[аи]\s*\d\.\d|інформація може|$)", t, re.I)
+    if not m:  # с 25.11.2026 Контакт-центр пишет «2.2 черга 01:30–02:30 12:00–16:00 3.2 черга …»
+        m = re.search(r"2\.2\s*черг[аи](.*?)(?=\d\.\d\s*черг|інформація може|$)", t, re.I)
     if not m:
         return None
     kuski = re.findall(r"(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})", m.group(1))
