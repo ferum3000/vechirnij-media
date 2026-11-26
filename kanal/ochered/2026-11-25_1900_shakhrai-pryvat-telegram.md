@@ -1,5 +1,5 @@
 ---
-vremya: 2026-11-25 19:00
+vremya: 2026-11-26 19:00
 tip: shakhrai
 status: odobreno
 kartinka: kartinky/shakhrai-2026-11-25-pryvat.png

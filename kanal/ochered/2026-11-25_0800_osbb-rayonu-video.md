@@ -1,5 +1,5 @@
 ---
-vremya: 2026-11-25 08:00
+vremya: 2026-11-26 12:00
 status: odobreno
 video: video/osbb-rayon-2026-11-25.mp4
 ---
