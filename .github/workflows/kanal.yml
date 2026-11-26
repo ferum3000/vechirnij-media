@@ -33,12 +33,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install --quiet pillow
+      # Видеопосты: post_queue.py вызывает ffprobe. Без него 25.11 видео «ОСББ району» упало и просрочилось.
+      - name: ffmpeg для видео
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null && ffprobe -version | head -1
+        continue-on-error: true
       - run: |
           git config user.name "vechirnij-kanal"
           git config user.email "ferum3000@users.noreply.github.com"
       - name: Проверка токена
         run: |
           python3 -c "import json,os,urllib.request as u; r=u.Request('https://chatapi.viber.com/pa/get_account_info',data=json.dumps({'auth_token':os.environ['VIBER_CHANNEL_TOKEN']}).encode(),headers={'Content-Type':'application/json'}); d=json.load(u.urlopen(r,timeout=30)); print('Viber:', d.get('status'), d.get('status_message')); exit(d.get('status'))"
+      # Следующая смена ставится в очередь СРАЗУ, в начале этой: она ждёт (concurrency) и стартует, как только
+      # эта закончится, даже если эта упадёт. 25.11 запуск в конце смены один раз не прошёл — канал молчал 18:05–21:52,
+      # пост 19:00 просрочился.
+      - name: Следующая смена в очередь
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: for i in 1 2 3 4 5; do gh workflow run kanal.yml --ref main && exit 0; sleep 20; done; echo "не поставилась, подстрахует конец смены"
       - name: Дежурство (каждые 5 минут, ~5 ч 45 мин)
         run: |
           set +e  # одна ошибка (сайт лёг, push не прошёл) не должна обрывать смену
@@ -60,8 +71,11 @@ jobs:
             [ $(date +%s) -ge $konec ] && break
             if [ $h -ge 22 ] || [ $h -lt 6 ]; then sleep 1200; else sleep 300; fi
           done
-      - name: Следующая смена
-        if: success()
+      - name: Следующая смена (страховка)
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run kanal.yml --ref main
+        run: |
+          # Если в очереди уже есть смена, ничего не делаем; иначе ставим, с повторами.
+          if [ -n "$(gh run list -w kanal.yml -s pending -L 1 --json databaseId -q '.[].databaseId')" ]; then echo "смена уже ждёт"; exit 0; fi
+          for i in 1 2 3 4 5; do gh workflow run kanal.yml --ref main && exit 0; sleep 20; done; exit 1
