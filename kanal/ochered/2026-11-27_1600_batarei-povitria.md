@@ -1,7 +1,7 @@
 ---
 vremya: 2026-11-27 16:00
 tip: korysno
-status: odobreno
+status: chernovyk
 kartinka: kartinky/korysno-2026-11-27-batarei.png
 ---
 🔥 Батарея гаряча знизу, а зверху холодна — це повітря
