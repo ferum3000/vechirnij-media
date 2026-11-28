@@ -68,6 +68,7 @@ def json_posle(html, metka):
 
 KANAL_TG = "keruiuchi_kompanii"  # Контакт-центр керуючих компаній (Житлосервіс-КР, Сітісервіс-КР, Уют-2011), офіційний
 GRUPA = "2.2"
+NOVI_NOMERY = ("4.1",)  # 28.11.2026 Контакт-центр: «Черга 2.2 (тепер 4.1)»
 
 
 def v_hvylyny(hhmm):
@@ -87,7 +88,7 @@ def razobrat_post(tekst, chas_posta, segodnya):
     import re
     t = " ".join(tekst.split())
     nyzh = t.lower()
-    if GRUPA not in t or "графік" not in nyzh:
+    if not any(g in t for g in (GRUPA, *NOVI_NOMERY)) or "графік" not in nyzh:
         return None
     pro_segodni = f"{segodnya.day} {MISYATSI[segodnya.month - 1]}" in nyzh or (
         "на сьогодні" in nyzh and chas_posta.date() == segodnya) or (
@@ -99,6 +100,12 @@ def razobrat_post(tekst, chas_posta, segodnya):
     m = re.search(r"груп[аи]\s*2\.2(.*?)(?=груп[аи]\s*\d\.\d|інформація може|$)", t, re.I)
     if not m:  # с 25.11.2026 Контакт-центр пишет «2.2 черга 01:30–02:30 12:00–16:00 3.2 черга …»
         m = re.search(r"2\.2\s*черг[аи](.*?)(?=\d\.\d\s*черг|інформація може|$)", t, re.I)
+    if not m:  # с 28.11.2026: «Черга 2.2 (тепер 4.1) ▪️ 00:00–01:30 … 🟢 Черга 3.2 (тепер 6.1) …»
+        m = re.search(r"черг[аи]\s*2\.2\s*(?:\([^)]*\))?(.*?)(?=черг[аи]\s*\d+\.\d|звертаємо увагу|інформація може|$)", t, re.I)
+    for nomer in NOVI_NOMERY:  # если 2.2 из поста исчезнет и останется только новый номер
+        if m:
+            break
+        m = re.search(rf"(?:черг[аи]|груп[аи])\s*{re.escape(nomer)}(?!\d)\s*(?:\([^)]*\))?(.*?)(?=(?:черг[аи]|груп[аи])\s*\d+\.\d|звертаємо увагу|інформація може|$)", t, re.I)
     if not m:
         return None
     kuski = re.findall(r"(\d{1,2}:\d{2})\s*[–—-]\s*(\d{1,2}:\d{2})", m.group(1))
